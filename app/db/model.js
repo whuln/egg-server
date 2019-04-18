@@ -1,6 +1,7 @@
-var Sequelize = require("sequelize");
+'use strict';
+const Sequelize = require("sequelize");
 
-module.exports = function(s) {
+module.exports = function (s) {
   if (!(s instanceof Sequelize)) {
     console.error("s must be an instance of Sequelize");
     return "s must be an instance of Sequelize";
@@ -84,7 +85,7 @@ module.exports = function(s) {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true
-      }, 
+      },
       data: Sequelize.TEXT
     }
   });

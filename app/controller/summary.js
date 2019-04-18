@@ -1,5 +1,5 @@
 'use strict';
-const { Car, CarDispatchForm, Summary } = require('../db');
+const { CarDispatchForm, Summary, User } = require('../db');
 const Sequelize = require('sequelize');
 const Op = Sequelize.Op;
 
@@ -10,15 +10,10 @@ class SummaryController extends Controller {
     const { ctx } = this;
     const data = ctx.request.body;
     const d_min = data.d_min, d_max = data.d_max;
-    const id = d_min +"-"+ d_max;
-
-    console.log(d_min);
-    const minDate = d_min.split('/'),
-      maxDate = d_max.split('/');
+    const id = d_min + "-" + d_max;
 
     let result = null;
 
-    console.log(minDate);
     // 缓存
     result = await Summary.findOne({
       where: {
@@ -35,9 +30,13 @@ class SummaryController extends Controller {
       result = JSON.stringify(result)
 
       await Summary.upsert({ id: id, data: result })
+    } else {
+      result = result.data;
     }
 
     ctx.body = result;
+
+
 
 
     async function _sum() {
@@ -62,8 +61,8 @@ class SummaryController extends Controller {
           }
         });
         console.log('--------caruseform-length------------' + rs.length);
-
-        rs.forEach(el => {
+        for (let i = 0; i < rs.length; i++) {
+          const el = rs[i];
           // 总计汇总
           srZongji.distance += parseFloat(el.kilometres2) - parseFloat(el.kilometres1);
           srZongji.times += 1;
@@ -80,16 +79,28 @@ class SummaryController extends Controller {
           srCar[el.carnumber].times += 1;
           srCar[el.carnumber].places += el.places + ',';
 
-          // 汇总司机
-          if (!srDriver.hasOwnProperty(el.driveraccount)) {
-            srDriver[el.driveraccount] = {}
-            srDriver[el.driveraccount].distance = 0.0;
-            srDriver[el.driveraccount].times = 0;
-            srDriver[el.driveraccount].places = '';
+          // 汇总司机 
+          const u = await User.findOne({
+            where: {
+              account: {
+                [Op.eq]: el.driveraccount,
+              }
+            }
+          })
+          var dname = u.get('name')
+
+          // console.log(dname);
+
+
+          if (!srDriver.hasOwnProperty(dname)) {
+            srDriver[dname] = {}
+            srDriver[dname].distance = 0.0;
+            srDriver[dname].times = 0;
+            srDriver[dname].places = '';
           }
-          srDriver[el.driveraccount].distance += parseFloat(el.kilometres2) - parseFloat(el.kilometres1);
-          srDriver[el.driveraccount].times += 1;
-          srDriver[el.driveraccount].places += el.places + ',';
+          srDriver[dname].distance += parseFloat(el.kilometres2) - parseFloat(el.kilometres1);
+          srDriver[dname].times += 1;
+          srDriver[dname].places += el.places + ',';
 
           // 汇总部门
           if (!srDepartment.hasOwnProperty(el.department)) {
@@ -101,7 +112,8 @@ class SummaryController extends Controller {
           srDepartment[el.department].distance += parseFloat(el.kilometres2) - parseFloat(el.kilometres1);
           srDepartment[el.department].times += 1;
           srDepartment[el.department].places += el.places + ',';
-        });
+        }
+
         //  console.log(srZongji)
         //  console.log(srCar)
         //  console.log(srDepartment)
